@@ -1,0 +1,105 @@
+
+# Contributor: Tomas Tucek <tucekt@gmail.com>build 
+
+# based on apply-patches.sh from msp430-gcc-9.3.1.11-source-patches by texas instruments
+# package for binutils 2.34 for 
+# This file is written by complete noob.
+# No warranty whatsoever
+
+########################################################################
+#     Warning!!!!!                                                     #
+#	As the parser of texi file is incapable of unicode (not even utf-8)#
+#	this package will not pass make stage if PATH contains non-asci ach
+
+pkgname=msp430-binutils
+pkgver=2.34
+pkgrel=1
+pkgdesc="A set of programs to assemble and manipulate binary and object files for the MSP430 architecture"
+arch=('aarch64')
+url="https://www.ti.com/tool/MSP430-GCC-OPENSOURCE"
+license=('GPL')
+depends=('zlib' 'binutils')				# as some of the shared files have been removed to prevent conflicts with main binutils they have to be already on a system
+options=('!emptydirs' '!libtool')
+# set -e
+# set -x
+
+	binutils_patch="$(echo binutils-*.patch)"
+	binutils_ver="$(echo $temp | tr '_' '.')"
+	binutils_url="https://ftp.gnu.org/gnu/binutils/binutils-$binutils_ver.tar.bz2"
+
+source=( "https://ftp.gnu.org/gnu/binutils/binutils-2.34.tar.bz2"
+		"http://software-dl.ti.com/msp430/msp430_public_sw/mcu/msp430/MSPGCC/9_3_1_2/export/msp430-gcc-9.3.1.11-source-patches.tar.bz2")
+
+sha1sums=('361566c9ab5e90bd847d06f46fb9f18ec6c3ecf0'
+          '9fdd50f55f45abac089b9cef9985eb02e4e4c362')
+
+
+_builddir=build
+
+prepare() {
+  cd ${srcdir}/binutils-*/
+  ln -nfs "binutils-$binutils_ver" binutils
+  patch -p0 -i ${srcdir}/msp430-gcc-*-source-patches/$binutils_patch
+   rm -frv ${_builddir}
+  mkdir -p ${_builddir} && cd ${_builddir}
+}
+
+
+
+build() {
+  cd ${srcdir}/binutils-*/
+  cd ${_builddir}
+  CFLAGS="-Os -g0" "${srcdir}/binutils-${pkgver}/configure" \
+      --prefix=/usr \
+      --program-prefix="msp430-" \
+      --disable-multilib \
+      --disable-werror \
+      --disable-nls \
+      --enable-install-libbfd \
+      --infodir=/usr/share/info \
+      --libdir=/usr/msp430/lib \
+      --mandir=/usr/share/man \
+      --target=msp430
+
+  # This checks the host environment and makes sure all the necessary
+  # tools are available to compile Binutils.
+  make configure-host
+
+  make tooldir=/usr all
+}
+
+check() {
+  cd ${srcdir}/binutils-*/${_builddir}
+
+  # do not abort on errors - manually check log files
+  make -k -j1 check || true
+
+}
+
+package() {
+  cd ${srcdir}/binutils-*/${_builddir}
+  make DESTDIR=${pkgdir} tooldir=/usr install
+  rm -f ${pkgdir}/usr/lib/libiberty.a
+  rm -f ${pkgdir}/usr/man/man1/{dlltool,nlmconv,windres}*
+  rm -f ${pkgdir}/usr/share/info/dir
+  cd ${pkgdir}/usr/include/
+  for file in ctf-api ctf; do
+		rm -f ${pkgdir}/usr/include/${file}.h
+	done
+	cd ${pkgdir}/usr/share/info
+  
+  for file in as bfd binutils gprof ld; do	# Odobral som: configure standards
+    mv ${file}.info "msp430-${file}.info"
+  done
+	# Odobral som : addr2line 
+	# Odobral som gprof size strings
+  for bin in  ar as c++filt  ld nm objcopy objdump ranlib readelf strip	
+  do
+    rm -f ${pkgdir}/usr/bin/${bin}
+  done
+
+  install -Dm644 "${srcdir}/binutils-${pkgver}/COPYING" \
+    "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}
+
+# vim:set sts=2 ts=2 sw=2 et:
