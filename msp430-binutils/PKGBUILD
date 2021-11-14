@@ -9,47 +9,52 @@
 ########################################################################
 #     Warning!!!!!                                                     #
 #	As the parser of texi file is incapable of unicode (not even utf-8)#
-#	this package will not pass make stage if PATH contains non-asci ach
+#	this package will not pass make stage if PATH contains non-asci symbols
 
 pkgname=msp430-binutils
 pkgver=2.34
-pkgrel=1
+pkgrel=2
 pkgdesc="A set of programs to assemble and manipulate binary and object files for the MSP430 architecture"
 arch=('aarch64')
 url="https://www.ti.com/tool/MSP430-GCC-OPENSOURCE"
 license=('GPL')
 depends=('zlib' 'binutils')				# as some of the shared files have been removed to prevent conflicts with main binutils they have to be already on a system
 options=('!emptydirs' '!libtool')
+_gccver=9.3.1.11
 # set -e
 # set -x
 
-	binutils_patch="$(echo binutils-*.patch)"
-	binutils_ver="$(echo $temp | tr '_' '.')"
-	binutils_url="https://ftp.gnu.org/gnu/binutils/binutils-$binutils_ver.tar.bz2"
+	configure_args_common='--target=msp430-elf --enable-languages=c,c++ --disable-nls --enable-initfini-array'
+	configure_args_binutils=$(echo --disable-{sim,gdb,werror})
 
-source=( "https://ftp.gnu.org/gnu/binutils/binutils-2.34.tar.bz2"
-		"http://software-dl.ti.com/msp430/msp430_public_sw/mcu/msp430/MSPGCC/9_3_1_2/export/msp430-gcc-9.3.1.11-source-patches.tar.bz2")
+source=( "http://software-dl.ti.com/msp430/msp430_public_sw/mcu/msp430/MSPGCC/9_3_1_2/export/msp430-gcc-9.3.1.11-source-full.tar.bz2"
+		#"http://software-dl.ti.com/msp430/msp430_public_sw/mcu/msp430/MSPGCC/9_3_1_2/export/msp430-gcc-9.3.1.11-source-patches.tar.bz2"
+		)
 
-sha1sums=('361566c9ab5e90bd847d06f46fb9f18ec6c3ecf0'
-          '9fdd50f55f45abac089b9cef9985eb02e4e4c362')
+sha1sums=('88cbf70edd38f29a88d0dc9e7544f42708f84835'
+          #'9fdd50f55f45abac089b9cef9985eb02e4e4c362'
+          )
 
 
-_builddir=build
-
+_builddir=build;
+pracovny=${srcdir}/msp430-gcc-${_gccver}-source-full/binutils
 prepare() {
-  cd ${srcdir}/binutils-*/
-  ln -nfs "binutils-$binutils_ver" binutils
-  patch -p0 -i ${srcdir}/msp430-gcc-*-source-patches/$binutils_patch
-   rm -frv ${_builddir}
+	echo "Zdroj: ${srcdir}"
+	rm -frv ${_builddir}
   mkdir -p ${_builddir} && cd ${_builddir}
+pracovny=${srcdir}/msp430-gcc-${_gccver}-source-full/binutils/
+	
+  #patch -p0 -i ${srcdir}/msp430-gcc-*-source-patches/$binutils_patch
+  #mkdir -p ${_builddir} && cd ${_builddir}
 }
 
 
 
 build() {
-  cd ${srcdir}/binutils-*/
-  cd ${_builddir}
-  CFLAGS="-Os -g0" "${srcdir}/binutils-${pkgver}/configure" \
+	echo "kde pracujem ${pracovny}"
+	cd ${_builddir}
+  #cd ${_builddir}/
+  CFLAGS="-Os -g0" ${pracovny}/configure  $configure_args_common $configure_args_binutils --enable-unit-tests=no --with-pkgversion="${pkg_version-$USER}"\
       --prefix=/usr \
       --program-prefix="msp430-" \
       --disable-multilib \
@@ -63,21 +68,23 @@ build() {
 
   # This checks the host environment and makes sure all the necessary
   # tools are available to compile Binutils.
+  echo '-------------------------------------\nFunguje\n\n'
   make configure-host
-
+	echo ' -------------------------------------\n Host nastaveny \n\n'
   make tooldir=/usr all
 }
 
 check() {
-  cd ${srcdir}/binutils-*/${_builddir}
+	#This specific version of binutils seem to have a problem with selftext when crosscompiling, There have been few related bugs filed but mainstream  curent version does not suffer it, So uncomment selfcheck and remove --enable-unit-tests=no on later version
+	echo "Som tu $PWD"
+  #cd ${srcdir}/{_builddir}
 
   # do not abort on errors - manually check log files
-  make -k -j1 check || true
-
+  #make -k -j1 check || true
 }
 
 package() {
-  cd ${srcdir}/binutils-*/${_builddir}
+   cd ${_builddir}
   make DESTDIR=${pkgdir} tooldir=/usr install
   rm -f ${pkgdir}/usr/lib/libiberty.a
   rm -f ${pkgdir}/usr/man/man1/{dlltool,nlmconv,windres}*
@@ -98,7 +105,7 @@ package() {
     rm -f ${pkgdir}/usr/bin/${bin}
   done
 
-  install -Dm644 "${srcdir}/binutils-${pkgver}/COPYING" \
+  install -Dm644 "${srcdir}/${pracovny}/COPYING" \
     "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }
 
