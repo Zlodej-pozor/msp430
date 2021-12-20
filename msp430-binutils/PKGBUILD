@@ -1,8 +1,7 @@
-
 # Contributor: Tomas Tucek <tucekt@gmail.com>build 
 
 # based on apply-patches.sh from msp430-gcc-9.3.1.11-source-patches by texas instruments
-# package for binutils 2.34 for 
+# package for binutils 2.34 for msp430 on aarch64
 # This file is written by complete noob.
 # No warranty whatsoever
 
@@ -56,7 +55,7 @@ build() {
   #cd ${_builddir}/
   CFLAGS="-Os -g0" ${pracovny}/configure  $configure_args_common $configure_args_binutils --enable-unit-tests=no --with-pkgversion="${pkg_version-$USER}"\
       --prefix=/usr \
-      --program-prefix="msp430-" \
+      --program-prefix="msp430-elf" \
       --disable-multilib \
       --disable-werror \
       --disable-nls \
@@ -108,5 +107,3 @@ package() {
   install -Dm644 "${srcdir}/${pracovny}/COPYING" \
     "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }
-
-# vim:set sts=2 ts=2 sw=2 et:
