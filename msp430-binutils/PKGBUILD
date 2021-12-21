@@ -11,7 +11,7 @@
 
 pkgname=msp430-binutils
 pkgver=2.34
-pkgrel=3
+pkgrel=4
 pkgdesc="A set of programs to assemble and manipulate binary and object files for the MSP430 architecture"
 arch=('aarch64')
 url="https://www.ti.com/tool/MSP430-GCC-OPENSOURCE"
@@ -88,6 +88,9 @@ package() {
   rm -f ${pkgdir}/usr/lib/libiberty.a
   rm -f ${pkgdir}/usr/man/man1/{dlltool,nlmconv,windres}*
   rm -f ${pkgdir}/usr/share/info/dir
+  cd ${pkgdir}/usr/
+  mkdir ${pkgdir}/usr/msp430-elf/include
+  cp -a ${pkgdir}/usr/include/.  ${pkgdir}/usr/msp430-elf/include/
   cd ${pkgdir}/usr/include/
   for file in ctf-api ctf; do
 		rm -f ${pkgdir}/usr/include/${file}.h
