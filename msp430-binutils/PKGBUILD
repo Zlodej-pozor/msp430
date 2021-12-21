@@ -1,6 +1,5 @@
-# Contributor: Tomas Tucek <tucekt@gmail.com>build 
+# Creator: Tomáš Tuček <tucekt@gmail.com>
 
-# based on apply-patches.sh from msp430-gcc-9.3.1.11-source-patches by texas instruments
 # package for binutils 2.34 for msp430 on aarch64
 # This file is written by complete noob.
 # No warranty whatsoever
@@ -12,7 +11,7 @@
 
 pkgname=msp430-binutils
 pkgver=2.34
-pkgrel=2
+pkgrel=3
 pkgdesc="A set of programs to assemble and manipulate binary and object files for the MSP430 architecture"
 arch=('aarch64')
 url="https://www.ti.com/tool/MSP430-GCC-OPENSOURCE"
@@ -22,9 +21,6 @@ options=('!emptydirs' '!libtool')
 _gccver=9.3.1.11
 # set -e
 # set -x
-
-	configure_args_common='--target=msp430-elf --enable-languages=c,c++ --disable-nls --enable-initfini-array'
-	configure_args_binutils=$(echo --disable-{sim,gdb,werror})
 
 source=( "http://software-dl.ti.com/msp430/msp430_public_sw/mcu/msp430/MSPGCC/9_3_1_2/export/msp430-gcc-9.3.1.11-source-full.tar.bz2"
 		#"http://software-dl.ti.com/msp430/msp430_public_sw/mcu/msp430/MSPGCC/9_3_1_2/export/msp430-gcc-9.3.1.11-source-patches.tar.bz2"
@@ -53,17 +49,21 @@ build() {
 	echo "kde pracujem ${pracovny}"
 	cd ${_builddir}
   #cd ${_builddir}/
-  CFLAGS="-Os -g0" ${pracovny}/configure  $configure_args_common $configure_args_binutils --enable-unit-tests=no --with-pkgversion="${pkg_version-$USER}"\
+  CFLAGS="-Os -g0" ${pracovny}/configure  --enable-unit-tests=no --with-pkgversion="${pkg_version-$USER}"\
       --prefix=/usr \
-      --program-prefix="msp430-elf" \
+      --program-prefix=msp430-elf- \
+      --enable-initfini-array \
       --disable-multilib \
+      --disable-sim \
+      --disable-gdb \
       --disable-werror \
       --disable-nls \
       --enable-install-libbfd \
       --infodir=/usr/share/info \
-      --libdir=/usr/msp430/lib \
+      --libdir=/usr/msp430-elf/lib \
       --mandir=/usr/share/man \
-      --target=msp430
+      --target=msp430-elf \
+      --enable-languages=c,c++
 
   # This checks the host environment and makes sure all the necessary
   # tools are available to compile Binutils.
